@@ -565,24 +565,36 @@ const _statsSortCols = [
   { key: 'hs', label: 'HS%', field: 'headshot_percentage' },
 ];
 function _parseStatNum(v) { return Number(String(v || '').replace(/[^0-9.\-]/g, '')) || 0; }
-window._statsSortBy = function(key, e) {
+window._statsSortBy = function(key) {
   const existing = _statsSort.findIndex(s => s.key === key);
-  if (e.shiftKey) {
-    if (existing >= 0) {
-      _statsSort[existing].dir = _statsSort[existing].dir === 'desc' ? 'asc' : 'desc';
+  if (existing >= 0) {
+    if (_statsSort[existing].dir === 'desc') {
+      _statsSort[existing].dir = 'asc';
     } else {
-      _statsSort.push({ key, dir: 'desc' });
+      _statsSort.splice(existing, 1);
     }
   } else {
-    if (existing >= 0 && _statsSort.length === 1) {
-      _statsSort[0].dir = _statsSort[0].dir === 'desc' ? 'asc' : 'desc';
-    } else {
-      _statsSort = [{ key, dir: 'desc' }];
-    }
+    _statsSort.push({ key, dir: 'desc' });
   }
   statsPage = 1;
   _renderStatsPage($('#statsContent'));
+  _renderSortChips();
 };
+window._statsClearSort = function() {
+  _statsSort = [];
+  statsPage = 1;
+  _renderStatsPage($('#statsContent'));
+  _renderSortChips();
+};
+function _renderSortChips() {
+  const el = document.getElementById('sortChips');
+  if (!el) return;
+  if (!_statsSort.length) { el.innerHTML = ''; return; }
+  el.innerHTML = _statsSort.map((s, i) => {
+    const col = _statsSortCols.find(c => c.key === s.key);
+    return `<span class="sort-chip sort-active" onclick="_statsSortBy('${s.key}')">${col.label} ${s.dir === 'desc' ? '↓' : '↑'}${_statsSort.length > 1 ? ' <span class="sort-badge">' + (i + 1) + '</span>' : ''}</span>`;
+  }).join('') + '<span class="sort-chip sort-clear" onclick="_statsClearSort()">✕ Clear</span>';
+}
 function _sortStatsData(data) {
   if (!_statsSort.length) return data;
   const sorted = [...data];
@@ -620,6 +632,7 @@ async function renderStats(app) {
         <option value="">All Agents</option>
       </select>
     </div>
+    <div id="sortChips" class="sort-chips"></div>
     <div id="statsContent"><div class="loading">Loading</div></div>
   `;
   loadStats();
@@ -679,7 +692,7 @@ function _statsTh(col) {
   const arrow = active ? (active.dir === 'desc' ? ' ↓' : ' ↑') : '';
   const badge = active && _statsSort.length > 1 ? ` <span class="sort-badge">${idx + 1}</span>` : '';
   const cls = active ? ' class="sort-active"' : '';
-  return `<th${cls} onclick="_statsSortBy('${col.key}',event)" style="cursor:pointer;user-select:none">${col.label}${arrow}${badge}</th>`;
+  return `<th${cls} onclick="_statsSortBy('${col.key}')" style="cursor:pointer;user-select:none">${col.label}${arrow}${badge}</th>`;
 }
 function _renderStatsPage(el) {
   const filtered = _filterStatsData(_statsData);
@@ -713,7 +726,7 @@ function _renderStatsPage(el) {
       </tr>`;
     }).join('')}</tbody>
   </table></div>
-  <div style="font-size:12px;color:var(--muted-soft);margin-top:var(--s-xs)">${sorted.length} players · Click column to sort · Shift+click for multi-column sort</div>`;
+  <div style="font-size:12px;color:var(--muted-soft);margin-top:var(--s-xs)">${sorted.length} players · Click column headers to add sort conditions</div>`;
   if (totalPages > 1) el.innerHTML += renderPagination(statsPage, totalPages, 'statsPage', '_statsGoPage');
   _observeStatsAvatars();
 }
