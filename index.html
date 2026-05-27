@@ -4,23 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>HackClutch — Valorant Esports</title>
-<script>
-(function(){
-  const iconSvg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="%%COLOR%%" d="M4.26 0v24l7.41-12h4.21L4.26 0zm7.42 13.41L7.26 24h8.42l4.41-7.41h-4.25V12h-4.16v1.41z"/></svg>';
-  function setFavicon(dark){
-    const color = dark ? '#ff4d6a' : '#ff385c';
-    const svg = iconSvg.replace('%%COLOR%%', color);
-    const link = document.querySelector('link[rel="icon"]') || document.createElement('link');
-    link.rel = 'icon';
-    link.type = 'image/svg+xml';
-    link.href = 'data:image/svg+xml,' + encodeURIComponent(svg);
-    if (!link.parentNode) document.head.appendChild(link);
-  }
-  const mq = matchMedia('(prefers-color-scheme:dark)');
-  setFavicon(mq.matches);
-  mq.addEventListener('change', e => setFavicon(e.matches));
-})();
-</script>
+<link rel="icon" type="image/svg+xml" href="https://simpleicons.org/icons/valorant.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
