@@ -63,13 +63,19 @@ API 代理规则：
 ## 项目结构
 
 ```
-├── index.html      # 页面骨架：顶部导航、搜索栏、#app 容器、弹窗
-├── style.css       # Airbnb 风格设计系统，CSS 变量
-├── app.js          # 全部业务逻辑：路由、API、渲染、缓存
-├── server.py       # 本地开发服务器 + CORS 代理（Vercel 部署不需要）
-├── vercel.json     # Vercel 部署配置（API 代理）
-├── v.json          # OpenAPI 文档 — 主数据 API
-└── vlr.json        # OpenAPI 文档 — VLR 选手/战队/赛事 API
+├── index.html          # 页面骨架：导航、搜索栏、#app 容器、弹窗
+├── vercel.json         # Vercel 部署配置（API 代理）
+├── server.py           # 本地开发服务器 + CORS 代理
+├── assets/
+│   ├── style.css       # Airbnb 风格设计系统
+│   └── app.js          # 全部业务逻辑：路由、API、渲染、缓存
+├── docs/
+│   └── DESIGN.md       # 设计规范
+├── api/
+│   ├── v.json          # 主数据 API OpenAPI 文档
+│   └── vlr.json        # VLR API OpenAPI 文档
+├── CLAUDE.md           # Claude Code 项目指引
+└── README.md           # 项目说明
 ```
 
 ### 路由

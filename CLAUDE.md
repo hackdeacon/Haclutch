@@ -19,10 +19,21 @@ lsof -ti:8080 | xargs kill -9
 
 ## Architecture
 
-**Three-file structure:**
-- `index.html` — Shell with header, nav, search bar, `#app` container, modal
-- `style.css` — Airbnb-inspired design system using CSS variables (see DESIGN.md)
-- `app.js` — All application logic: routing, API calls, rendering, caching
+```
+├── index.html          # 页面骨架：导航、搜索栏、#app 容器、弹窗
+├── vercel.json         # Vercel 部署配置（API 代理）
+├── server.py           # 本地开发服务器 + CORS 代理
+├── assets/
+│   ├── style.css       # Airbnb 风格设计系统
+│   └── app.js          # 全部业务逻辑：路由、API、渲染、缓存
+├── docs/
+│   └── DESIGN.md       # 设计规范
+├── api/
+│   ├── v.json          # 主数据 API OpenAPI 文档
+│   └── vlr.json        # VLR API OpenAPI 文档
+├── CLAUDE.md           # Claude Code 项目指引
+└── README.md           # 项目说明
+```
 
 **Routing:** Hash-based SPA (`#/matches`, `#/team/123`). Router in `app.js` dispatches to `render*()` functions that write directly to `#app`.
 
@@ -48,7 +59,7 @@ lsof -ti:8080 | xargs kill -9
 
 ## Design System
 
-See `DESIGN.md` for full Airbnb-inspired token spec. Key values:
+See `docs/DESIGN.md` for full Airbnb-inspired token spec. Key values:
 - Primary: `#ff385c` (Rausch pink)
 - Border radius: 4/8/14/20/32/9999px scale
 - Spacing: 2/4/8/12/16/24/32/48/64px scale
