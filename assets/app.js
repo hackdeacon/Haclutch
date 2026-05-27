@@ -244,11 +244,10 @@ let searchOpen = false;
 function toggleSearch() {
   searchOpen = !searchOpen;
   const bar = $('#searchBar');
+  bar.classList.toggle('open', searchOpen);
   if (searchOpen) {
-    bar.classList.add('open');
-    setTimeout(() => $('#searchInput').focus(), 200);
+    setTimeout(() => $('#searchInput').focus(), 150);
   } else {
-    bar.classList.remove('open');
     $('#searchInput').value = '';
   }
 }
