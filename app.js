@@ -555,6 +555,7 @@ function _renderRankTable() {
 
 // --- Page: Stats ---
 let statsRegion = 'cn', statsTimespan = '30', statsPage = 1, _statsData = [], _statsSort = [];
+let _statsFilterOrg = '', _statsFilterAgent = '';
 const _statsSortCols = [
   { key: 'rating', label: 'Rating', field: 'rating' },
   { key: 'acs', label: 'ACS', field: 'average_combat_score' },
@@ -598,6 +599,8 @@ function _sortStatsData(data) {
   return sorted;
 }
 async function renderStats(app) {
+  _statsFilterOrg = '';
+  _statsFilterAgent = '';
   app.innerHTML = `
     <h1 class="page-title">Player Stats</h1>
     <div class="filters">
@@ -609,6 +612,12 @@ async function renderStats(app) {
         <option value="60" ${statsTimespan==='60'?'selected':''}>Last 60 days</option>
         <option value="90" ${statsTimespan==='90'?'selected':''}>Last 90 days</option>
         <option value="all" ${statsTimespan==='all'?'selected':''}>All time</option>
+      </select>
+      <select class="filter-select" id="statsFilterOrg" onchange="_statsFilterOrg=this.value;statsPage=1;_renderStatsPage($('#statsContent'))">
+        <option value="">All Orgs</option>
+      </select>
+      <select class="filter-select" id="statsFilterAgent" onchange="_statsFilterAgent=this.value;statsPage=1;_renderStatsPage($('#statsContent'))">
+        <option value="">All Agents</option>
       </select>
     </div>
     <div id="statsContent"><div class="loading">Loading</div></div>
@@ -626,12 +635,27 @@ window.loadStats = async function() {
     _statsData = data.segments || [];
     if (!_statsData.length) return setEmpty(el, 'No stats available');
     statsPage = 1;
+    _populateStatsFilters();
     _renderStatsPage(el);
   } catch (e) {
     setError(el, 'Failed to load stats', loadStats);
   }
 };
 
+function _populateStatsFilters() {
+  const orgs = [...new Set(_statsData.map(p => p.org).filter(Boolean))].sort();
+  const agents = [...new Set(_statsData.flatMap(p => p.agents || []).filter(Boolean))].sort();
+  const orgSel = document.getElementById('statsFilterOrg');
+  const agentSel = document.getElementById('statsFilterAgent');
+  if (orgSel) orgSel.innerHTML = '<option value="">All Orgs</option>' + orgs.map(o => `<option value="${esc(o)}">${esc(o)}</option>`).join('');
+  if (agentSel) agentSel.innerHTML = '<option value="">All Agents</option>' + agents.map(a => `<option value="${esc(a)}">${esc(a)}</option>`).join('');
+}
+function _filterStatsData(data) {
+  let result = data;
+  if (_statsFilterOrg) result = result.filter(p => p.org === _statsFilterOrg);
+  if (_statsFilterAgent) result = result.filter(p => (p.agents || []).includes(_statsFilterAgent));
+  return result;
+}
 const _statsAvatarCache = {};
 const _statsPlayerIdCache = {};
 async function _fetchStatsPlayer(name) {
@@ -658,7 +682,8 @@ function _statsTh(col) {
   return `<th${cls} onclick="_statsSortBy('${col.key}',event)" style="cursor:pointer;user-select:none">${col.label}${arrow}${badge}</th>`;
 }
 function _renderStatsPage(el) {
-  const sorted = _sortStatsData(_statsData);
+  const filtered = _filterStatsData(_statsData);
+  const sorted = _sortStatsData(filtered);
   const totalPages = Math.ceil(sorted.length / STATS_PER_PAGE);
   const start = (statsPage - 1) * STATS_PER_PAGE;
   const items = sorted.slice(start, start + STATS_PER_PAGE);
@@ -688,7 +713,7 @@ function _renderStatsPage(el) {
       </tr>`;
     }).join('')}</tbody>
   </table></div>
-  <div style="font-size:12px;color:var(--muted-soft);margin-top:var(--s-xs)">Click column to sort · Shift+click for multi-column sort</div>`;
+  <div style="font-size:12px;color:var(--muted-soft);margin-top:var(--s-xs)">${sorted.length} players · Click column to sort · Shift+click for multi-column sort</div>`;
   if (totalPages > 1) el.innerHTML += renderPagination(statsPage, totalPages, 'statsPage', '_statsGoPage');
   _observeStatsAvatars();
 }
