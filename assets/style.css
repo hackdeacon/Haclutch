@@ -322,7 +322,6 @@ tr:hover td{background:var(--surface-soft)}
   }
   body{color-scheme:dark}
   .filter-select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23e8e8e8'%3E%3Cpath d='M6 8L1 3h10z'/%3E%3C/svg%3E")}
-  .logo-icon img{filter:brightness(0) invert(1) !important}
   .event-status.ongoing{background:#1a3a2a;color:#4ade80}
   .event-status.upcoming{background:#1a2a3a;color:#60a5fa}
 }

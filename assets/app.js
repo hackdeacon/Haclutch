@@ -3,6 +3,17 @@ const VLR_API = '';
 const $ = (s, p = document) => p.querySelector(s);
 const $$ = (s, p = document) => [...p.querySelectorAll(s)];
 function getTheme() { return matchMedia('(prefers-color-scheme:dark)').matches ? 'dark' : 'light'; }
+function updateThemeIcons() {
+  const dark = getTheme() === 'dark';
+  const color = dark ? 'ffffff' : '000000';
+  const url = `https://cdn.simpleicons.org/valorant/${color}`;
+  const favicon = $('#favicon');
+  if (favicon) favicon.href = url;
+  const logo = $('#logoIcon');
+  if (logo) { logo.src = url; logo.style.filter = ''; }
+}
+matchMedia('(prefers-color-scheme:dark)').addEventListener('change', updateThemeIcons);
+updateThemeIcons();
 function vlrThemePath(path) {
   const sep = path.includes('?') ? '&' : '?';
   return path + sep + 'theme=' + getTheme();

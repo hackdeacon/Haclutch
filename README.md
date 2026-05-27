@@ -1,4 +1,4 @@
-# HackClutch — Valorant 电竞数据面板
+# Haclutch — Valorant 电竞数据面板
 
 一个简洁、快速的 Valorant 电竞数据面板，使用原生 HTML、CSS 和 JavaScript 构建，无框架、无构建工具。
 

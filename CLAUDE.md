@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-HackClutch is a Valorant esports dashboard — a vanilla HTML/CSS/JS single-page application with no build tools or frameworks.
+Haclutch is a Valorant esports dashboard — a vanilla HTML/CSS/JS single-page application with no build tools or frameworks.
 
 ## Development Commands
 
