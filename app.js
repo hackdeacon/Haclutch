@@ -554,7 +554,49 @@ function _renderRankTable() {
 }
 
 // --- Page: Stats ---
-let statsRegion = 'cn', statsTimespan = '30', statsPage = 1, _statsData = [];
+let statsRegion = 'cn', statsTimespan = '30', statsPage = 1, _statsData = [], _statsSort = [];
+const _statsSortCols = [
+  { key: 'rating', label: 'Rating', field: 'rating' },
+  { key: 'acs', label: 'ACS', field: 'average_combat_score' },
+  { key: 'kd', label: 'K/D', field: 'kill_deaths' },
+  { key: 'adr', label: 'ADR', field: 'average_damage_per_round' },
+  { key: 'kpr', label: 'KPR', field: 'kills_per_round' },
+  { key: 'hs', label: 'HS%', field: 'headshot_percentage' },
+];
+function _parseStatNum(v) { return Number(String(v || '').replace(/[^0-9.\-]/g, '')) || 0; }
+window._statsSortBy = function(key, e) {
+  const existing = _statsSort.findIndex(s => s.key === key);
+  if (e.shiftKey) {
+    if (existing >= 0) {
+      _statsSort[existing].dir = _statsSort[existing].dir === 'desc' ? 'asc' : 'desc';
+    } else {
+      _statsSort.push({ key, dir: 'desc' });
+    }
+  } else {
+    if (existing >= 0 && _statsSort.length === 1) {
+      _statsSort[0].dir = _statsSort[0].dir === 'desc' ? 'asc' : 'desc';
+    } else {
+      _statsSort = [{ key, dir: 'desc' }];
+    }
+  }
+  statsPage = 1;
+  _renderStatsPage($('#statsContent'));
+};
+function _sortStatsData(data) {
+  if (!_statsSort.length) return data;
+  const sorted = [...data];
+  sorted.sort((a, b) => {
+    for (const { key, dir } of _statsSort) {
+      const col = _statsSortCols.find(c => c.key === key);
+      if (!col) continue;
+      const va = _parseStatNum(a[col.field]);
+      const vb = _parseStatNum(b[col.field]);
+      if (va !== vb) return dir === 'desc' ? vb - va : va - vb;
+    }
+    return 0;
+  });
+  return sorted;
+}
 async function renderStats(app) {
   app.innerHTML = `
     <h1 class="page-title">Player Stats</h1>
@@ -607,12 +649,21 @@ async function _fetchStatsPlayer(name) {
   } catch { return null; }
 }
 
+function _statsTh(col) {
+  const active = _statsSort.find(s => s.key === col.key);
+  const idx = _statsSort.findIndex(s => s.key === col.key);
+  const arrow = active ? (active.dir === 'desc' ? ' ↓' : ' ↑') : '';
+  const badge = active && _statsSort.length > 1 ? ` <span class="sort-badge">${idx + 1}</span>` : '';
+  const cls = active ? ' class="sort-active"' : '';
+  return `<th${cls} onclick="_statsSortBy('${col.key}',event)" style="cursor:pointer;user-select:none">${col.label}${arrow}${badge}</th>`;
+}
 function _renderStatsPage(el) {
-  const totalPages = Math.ceil(_statsData.length / STATS_PER_PAGE);
+  const sorted = _sortStatsData(_statsData);
+  const totalPages = Math.ceil(sorted.length / STATS_PER_PAGE);
   const start = (statsPage - 1) * STATS_PER_PAGE;
-  const items = _statsData.slice(start, start + STATS_PER_PAGE);
+  const items = sorted.slice(start, start + STATS_PER_PAGE);
   el.innerHTML = `<div class="table-wrap"><table>
-    <thead><tr><th>#</th><th>Player</th><th>Org</th><th>Agents</th><th>Rating</th><th>ACS</th><th>K/D</th><th>ADR</th><th>KPR</th><th>HS%</th></tr></thead>
+    <thead><tr><th>#</th><th>Player</th><th>Org</th><th>Agents</th>${_statsSortCols.map(c => _statsTh(c)).join('')}</tr></thead>
     <tbody>${items.map((p, i) => {
       const key = p.player.toLowerCase();
       const cached = _statsPlayerIdCache[key];
@@ -636,7 +687,8 @@ function _renderStatsPage(el) {
         <td>${esc(p.headshot_percentage)}</td>
       </tr>`;
     }).join('')}</tbody>
-  </table></div>`;
+  </table></div>
+  <div style="font-size:12px;color:var(--muted-soft);margin-top:var(--s-xs)">Click column to sort · Shift+click for multi-column sort</div>`;
   if (totalPages > 1) el.innerHTML += renderPagination(statsPage, totalPages, 'statsPage', '_statsGoPage');
   _observeStatsAvatars();
 }

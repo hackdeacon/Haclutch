@@ -109,6 +109,8 @@ tr:hover td{background:var(--surface-soft)}
 .stats-player-cell{display:inline-flex;align-items:center;gap:var(--s-sm)}
 .stats-av{width:28px;height:28px;border-radius:var(--r-full);object-fit:cover;background:var(--surface-soft);flex-shrink:0}
 .stats-av-placeholder{width:28px;height:28px;border-radius:var(--r-full);background:var(--surface-soft);flex-shrink:0;display:inline-block}
+.sort-active{color:var(--primary) !important}
+.sort-badge{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:var(--r-full);background:var(--primary);color:var(--on-primary);font-size:10px;font-weight:700;vertical-align:middle}
 
 /* ========= Event Card ========= */
 .event-card{display:flex;align-items:center;gap:var(--s-md);padding:var(--s-base) var(--s-lg)}
