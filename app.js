@@ -711,7 +711,7 @@ function _renderStatsPage(el) {
         <td class="rank-cell">${start + i + 1}</td>
         <td style="font-weight:600">
           <span class="stats-player-cell" data-name="${esc(p.player)}">
-            ${avSrc ? `<img src="${fixImg(avSrc)}" class="stats-av" onerror="this.style.display='none'">` : `<span class="stats-av-placeholder" data-idx="${start + i}"></span>`}
+            ${avSrc ? `<img src="${fixImg(avSrc)}" class="stats-av" onerror="this.className='stats-av-placeholder';this.removeAttribute('src');this.removeAttribute('onerror')">` : `<span class="stats-av-placeholder"></span>`}
             ${href ? `<a href="${href}">${esc(p.player)}</a>` : `<span class="stats-player-name">${esc(p.player)}</span>`}
           </span>
         </td>
@@ -746,7 +746,7 @@ function _observeStatsAvatars() {
       const name = cell.dataset.name;
       _fetchStatsPlayer(name).then(match => {
         if (!match) return;
-        ph.outerHTML = `<img src="${fixImg(match.img)}" class="stats-av" onerror="this.style.display='none'">`;
+        ph.outerHTML = match.img ? `<img src="${fixImg(match.img)}" class="stats-av" onerror="this.className='stats-av-placeholder';this.removeAttribute('src');this.removeAttribute('onerror')">` : `<span class="stats-av-placeholder"></span>`;
         const nameSpan = cell.querySelector('.stats-player-name');
         if (nameSpan) nameSpan.outerHTML = `<a href="#/player/${match.id}">${esc(name)}</a>`;
       });
