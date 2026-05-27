@@ -486,13 +486,17 @@ window.showMatchDetail = async function(id) {
 };
 
 // --- Page: Rankings ---
-let rankingRegion = 'cn';
+let rankingRegion = 'cn', _rankData = [], _rankSort = 'rank';
 async function renderRankings(app) {
   app.innerHTML = `
     <h1 class="page-title">Rankings</h1>
     <div class="filters">
       <select class="filter-select" id="rankRegion" onchange="rankingRegion=this.value;loadRankings()">
         ${regionOptions(rankingRegion)}
+      </select>
+      <select class="filter-select" id="rankSort" onchange="_rankSort=this.value;_renderRankTable()">
+        <option value="rank" ${_rankSort==='rank'?'selected':''}>Sort by Rank</option>
+        <option value="earnings" ${_rankSort==='earnings'?'selected':''}>Sort by Earnings</option>
       </select>
     </div>
     <div id="rankContent"><div class="loading">Loading</div></div>
@@ -505,25 +509,38 @@ window.loadRankings = async function() {
   setLoading(el);
   try {
     const data = await apiFetch('/rankings?region=' + rankingRegion);
-    const items = data.segments || [];
-    if (!items.length) return setEmpty(el, 'No rankings for this region');
-    el.innerHTML = `<div class="table-wrap"><table>
-      <thead><tr><th>#</th><th>Team</th><th>Country</th><th>Record</th><th>Earnings</th><th>Last Played</th></tr></thead>
-      <tbody>${items.map(r => `
-        <tr>
-          <td class="rank-cell">${esc(r.rank)}</td>
-          <td><div class="team-cell"><img src="${fixImg(r.logo)}" alt="" onerror="this.style.display='none'"><span style="font-weight:600">${esc(r.team)}</span></div></td>
-          <td>${flagToEmoji(r.country)} ${esc(r.country || '')}</td>
-          <td>${esc(r.record || '')}</td>
-          <td>${esc(r.earnings || '')}</td>
-          <td style="font-size:13px;color:var(--muted)">${esc(r.last_played || '')} ${r.last_played_team ? '· ' + esc(r.last_played_team) : ''}</td>
-        </tr>
-      `).join('')}</tbody>
-    </table></div>`;
+    _rankData = data.segments || [];
+    if (!_rankData.length) return setEmpty(el, 'No rankings for this region');
+    _renderRankTable();
   } catch (e) {
     setError(el, 'Failed to load rankings', loadRankings);
   }
 };
+function _parseEarnings(s) {
+  if (!s) return 0;
+  return Number(s.replace(/[^0-9.]/g, '')) || 0;
+}
+function _renderRankTable() {
+  const el = $('#rankContent');
+  if (!el) return;
+  let items = _rankData;
+  if (_rankSort === 'earnings') {
+    items = [..._rankData].sort((a, b) => _parseEarnings(b.earnings) - _parseEarnings(a.earnings));
+  }
+  el.innerHTML = `<div class="table-wrap"><table>
+    <thead><tr><th>#</th><th>Team</th><th>Country</th><th>Record</th><th>Earnings</th><th>Last Played</th></tr></thead>
+    <tbody>${items.map((r, i) => `
+      <tr>
+        <td class="rank-cell">${_rankSort === 'earnings' ? i + 1 : esc(r.rank)}</td>
+        <td><div class="team-cell"><img src="${fixImg(r.logo)}" alt="" onerror="this.style.display='none'"><span style="font-weight:600">${esc(r.team)}</span></div></td>
+        <td>${flagToEmoji(r.country)} ${esc(r.country || '')}</td>
+        <td>${esc(r.record || '')}</td>
+        <td>${esc(r.earnings || '')}</td>
+        <td style="font-size:13px;color:var(--muted)">${esc(r.last_played || '')} ${r.last_played_team ? '· ' + esc(r.last_played_team) : ''}</td>
+      </tr>
+    `).join('')}</tbody>
+  </table></div>`;
+}
 
 // --- Page: Stats ---
 let statsRegion = 'cn', statsTimespan = '30', statsPage = 1, _statsData = [];
