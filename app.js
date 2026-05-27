@@ -1,9 +1,5 @@
-const API_BASE_RAW = 'https://v.kiringo.cn/v2';
-const API = location.protocol === 'file:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1'
-  ? '/v2' : API_BASE_RAW;
-const VLR_API_RAW = 'https://vlr.kiringo.cn';
-const VLR_API = location.protocol === 'file:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1'
-  ? '' : VLR_API_RAW;
+const API = '/v2';
+const VLR_API = '';
 const $ = (s, p = document) => p.querySelector(s);
 const $$ = (s, p = document) => [...p.querySelectorAll(s)];
 function getTheme() { return matchMedia('(prefers-color-scheme:dark)').matches ? 'dark' : 'light'; }
