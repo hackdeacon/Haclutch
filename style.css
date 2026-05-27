@@ -298,3 +298,23 @@ tr:hover td{background:var(--surface-soft)}
 .cache-indicator .cache-dot.miss {
   background: var(--muted-soft);
 }
+
+/* ========= Dark Mode ========= */
+@media(prefers-color-scheme:dark){
+  :root{
+    --primary:#ff4d6a;--primary-active:#ff6b84;--primary-disabled:#5c1a2a;
+    --ink:#e8e8e8;--body:#d0d0d0;--muted:#999;--muted-soft:#666;
+    --hairline:#333;--hairline-soft:#2a2a2a;--border-strong:#555;
+    --canvas:#1a1a1a;--surface-soft:#242424;--surface-strong:#2e2e2e;
+    --on-primary:#fff;--on-dark:#fff;
+    --scrim:rgba(0,0,0,.7);
+    --win:#4ade80;--loss:#f87171;
+    --shadow-card:0 0 0 1px rgba(255,255,255,.04),0 2px 6px rgba(0,0,0,.3);
+    --shadow-float:0 0 0 1px rgba(255,255,255,.04),0 2px 6px rgba(0,0,0,.3);
+  }
+  body{color-scheme:dark}
+  .filter-select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23e8e8e8'%3E%3Cpath d='M6 8L1 3h10z'/%3E%3C/svg%3E")}
+  .logo-icon img{filter:brightness(0) invert(1) !important}
+  .event-status.ongoing{background:#1a3a2a;color:#4ade80}
+  .event-status.upcoming{background:#1a2a3a;color:#60a5fa}
+}
