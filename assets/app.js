@@ -199,12 +199,21 @@ function byId(items) {
 // --- Router ---
 let currentRoute = '';
 let liveInterval = null;
+function isMobile() { return window.innerWidth <= 744; }
 function navigate(path) { history.pushState(null, '', path); router(); }
 function getRoute() { return location.pathname || '/'; }
 function clearLiveInterval() { if (liveInterval) { clearInterval(liveInterval); liveInterval = null; } }
 
 async function router() {
   clearLiveInterval();
+  // Close mobile nav on route change
+  const hamburger = $('#hamburger');
+  const nav = $('#nav');
+  if (hamburger && nav) {
+    hamburger.classList.remove('open');
+    nav.classList.remove('open');
+    document.body.style.overflow = '';
+  }
   const route = getRoute();
   currentRoute = route;
   const app = $('#app');
@@ -240,20 +249,37 @@ document.addEventListener('click', e => {
 });
 
 // --- Search ---
-let searchOpen = false;
 function toggleSearch() {
-  searchOpen = !searchOpen;
-  const bar = $('#searchBar');
-  bar.classList.toggle('open', searchOpen);
-  if (searchOpen) {
-    setTimeout(() => $('#searchInput').focus(), 150);
-  } else {
-    $('#searchInput').value = '';
-  }
+  // On mobile, open the search overlay
+  const overlay = $('#searchOverlay');
+  overlay.classList.add('show');
+  setTimeout(() => $('#searchOverlayInput').focus(), 100);
 }
-document.addEventListener('keydown', e => { if (e.key === 'Escape' && searchOpen) toggleSearch(); });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    const overlay = $('#searchOverlay');
+    if (overlay && overlay.classList.contains('show')) {
+      overlay.classList.remove('show');
+      $('#searchOverlayInput').value = '';
+    }
+    const hamburger = $('#hamburger');
+    const nav = $('#nav');
+    if (hamburger && hamburger.classList.contains('open')) {
+      hamburger.classList.remove('open');
+      nav.classList.remove('open');
+      document.body.style.overflow = '';
+    }
+  }
+});
 document.addEventListener('click', e => {
-  if (searchOpen && !$('#searchBox').contains(e.target)) toggleSearch();
+  // Close mobile nav on outside tap
+  const hamburger = $('#hamburger');
+  const nav = $('#nav');
+  if (hamburger && nav && nav.classList.contains('open') && !nav.contains(e.target) && !hamburger.contains(e.target)) {
+    hamburger.classList.remove('open');
+    nav.classList.remove('open');
+    document.body.style.overflow = '';
+  }
 });
 let searchTimer = null;
 $('#searchInput').addEventListener('input', e => {
@@ -271,14 +297,107 @@ function doSearch() {
 // --- Modal ---
 function openModal(html) {
   $('#modalBody').innerHTML = html;
-  $('#modal').classList.add('show');
+  const modal = $('#modal');
+  modal.classList.add('show');
   document.body.style.overflow = 'hidden';
+  const content = $('#modalContent');
+  if (content) content.scrollTop = 0;
 }
 function closeModal() {
-  $('#modal').classList.remove('show');
+  const modal = $('#modal');
+  const content = $('#modalContent');
+  if (isMobile() && content) {
+    content.style.transform = '';
+    content.style.transition = 'transform .3s cubic-bezier(.4,0,.2,1)';
+  }
+  modal.classList.remove('show');
   document.body.style.overflow = '';
 }
 $('#modal').addEventListener('click', e => { if (e.target === $('#modal')) closeModal(); });
+
+// Swipe-to-dismiss modal on mobile
+(function() {
+  const handle = $('#modalDragHandle');
+  const content = $('#modalContent');
+  if (!handle || !content) return;
+  let startY = 0, currentY = 0, dragging = false;
+  handle.addEventListener('touchstart', e => {
+    startY = e.touches[0].clientY;
+    dragging = true;
+    content.style.transition = 'none';
+  }, { passive: true });
+  document.addEventListener('touchmove', e => {
+    if (!dragging) return;
+    currentY = e.touches[0].clientY;
+    const dy = Math.max(0, currentY - startY);
+    content.style.transform = `translateY(${dy}px)`;
+  }, { passive: true });
+  document.addEventListener('touchend', () => {
+    if (!dragging) return;
+    dragging = false;
+    content.style.transition = 'transform .3s cubic-bezier(.4,0,.2,1)';
+    if (currentY - startY > 100) {
+      closeModal();
+    } else {
+      content.style.transform = 'translateY(0)';
+    }
+  });
+})();
+
+// --- Mobile Hamburger ---
+(function() {
+  const hamburger = $('#hamburger');
+  const nav = $('#nav');
+  if (!hamburger || !nav) return;
+  hamburger.addEventListener('click', () => {
+    const open = hamburger.classList.toggle('open');
+    nav.classList.toggle('open', open);
+    hamburger.setAttribute('aria-expanded', open);
+    document.body.style.overflow = open ? 'hidden' : '';
+  });
+  nav.addEventListener('click', e => {
+    if (e.target.closest('a')) {
+      hamburger.classList.remove('open');
+      nav.classList.remove('open');
+      hamburger.setAttribute('aria-expanded', 'false');
+      document.body.style.overflow = '';
+    }
+  });
+})();
+
+// --- Mobile Search Overlay ---
+(function() {
+  const overlay = $('#searchOverlay');
+  const closeBtn = $('#searchOverlayClose');
+  const input = $('#searchOverlayInput');
+  const goBtn = $('#searchOverlayGo');
+  if (!overlay || !closeBtn || !input || !goBtn) return;
+  closeBtn.addEventListener('click', () => {
+    overlay.classList.remove('show');
+    input.value = '';
+  });
+  goBtn.addEventListener('click', () => {
+    const q = input.value.trim();
+    if (q) {
+      overlay.classList.remove('show');
+      navigate('/search?q=' + encodeURIComponent(q));
+    }
+  });
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') goBtn.click();
+    if (e.key === 'Escape') closeBtn.click();
+  });
+  let mobileSearchTimer = null;
+  input.addEventListener('input', e => {
+    clearTimeout(mobileSearchTimer);
+    const q = e.target.value.trim();
+    if (q.length < 2) return;
+    mobileSearchTimer = setTimeout(() => {
+      overlay.classList.remove('show');
+      navigate('/search?q=' + encodeURIComponent(q));
+    }, 500);
+  });
+})();
 
 
 // ========== Cache Layer ==========
@@ -381,15 +500,45 @@ async function renderNews(app) {
     const data = await apiFetch('/news');
     const items = data.segments || [];
     if (!items.length) return setEmpty(app, 'No news found');
-    app.innerHTML = '<h1 class="page-title">News</h1><div class="cards">' +
-      items.map(n => `
-        <a class="card news-card" href="${n.url_path}" target="_blank" rel="noopener">
-          <div class="news-date">${esc(n.date || '')}</div>
-          <div class="news-title">${esc(n.title)}</div>
-          <div class="news-desc">${esc(n.description)}</div>
-          <div class="news-meta">${esc(n.author || '')}</div>
-        </a>
-      `).join('') + '</div>';
+    const [hero, ...rest] = items;
+    const heroTime = _relativeTime(hero.date);
+    const heroRead = _readTime(hero.description);
+    let html = '<h1 class="page-title">News</h1>';
+    html += `<a class="card news-hero" href="${hero.url_path}" target="_blank" rel="noopener">
+        <div class="news-hero-body">
+          <div class="news-hero-meta">
+            ${heroTime ? `<span class="news-tag">${esc(heroTime)}</span>` : ''}
+            ${heroRead ? `<span class="news-tag">${esc(heroRead)}</span>` : ''}
+          </div>
+          <div class="news-hero-title">${esc(hero.title)}</div>
+          <div class="news-hero-desc">${esc(hero.description)}</div>
+          <div class="news-hero-footer">
+            <span class="news-author">${esc(hero.author || '')}</span>
+            <span class="news-read-link">Read on VLR.gg &rarr;</span>
+          </div>
+        </div>
+      </a>`;
+    if (rest.length) {
+      html += '<div class="cards news-grid">' +
+        rest.map(n => {
+          const t = _relativeTime(n.date);
+          const r = _readTime(n.description);
+          return `<a class="card news-card" href="${n.url_path}" target="_blank" rel="noopener">
+            <div class="news-card-top">
+              <div class="news-card-meta">
+                ${t ? `<span class="news-tag">${esc(t)}</span>` : ''}
+                ${r ? `<span class="news-tag">${esc(r)}</span>` : ''}
+              </div>
+              <div class="news-title">${esc(n.title)}</div>
+              <div class="news-desc">${esc(n.description)}</div>
+            </div>
+            <div class="news-card-footer">
+              <span class="news-author">${esc(n.author || '')}</span>
+            </div>
+          </a>`;
+        }).join('') + '</div>';
+    }
+    app.innerHTML = html;
   } catch (e) {
     setError(app, 'Failed to load news', () => renderNews(app));
   }
@@ -536,7 +685,7 @@ window.showMatchDetail = async function(id) {
           if (!players.length) return;
           const teamName = seg.teams?.[ti]?.name || (ti === 0 ? 'Team 1' : 'Team 2');
           html += `<div style="font-size:12px;font-weight:600;color:var(--muted);margin:var(--s-sm) 0 var(--s-xs)">${esc(teamName)}</div>`;
-          html += '<div class="table-wrap" style="margin-bottom:var(--s-sm)"><table style="font-size:13px"><thead><tr><th>Player</th><th>Agent</th><th>Rating</th><th>ACS</th><th>K/D/A</th><th>+/-</th><th>ADR</th><th>HS%</th><th>KAST</th></tr></thead><tbody>';
+          html += '<div class="table-wrap" style="margin-bottom:var(--s-sm)"><table class="match-detail-table" style="font-size:13px"><thead><tr><th>Player</th><th>Agent</th><th>Rating</th><th>ACS</th><th>K/D/A</th><th>+/-</th><th>ADR</th><th>HS%</th><th>KAST</th></tr></thead><tbody>';
           players.forEach(p => {
             const kd = (parseInt(p.kills) || 0) - (parseInt(p.deaths) || 0);
             const kdColor = kd > 0 ? 'var(--win)' : kd < 0 ? 'var(--loss)' : 'var(--muted)';
@@ -562,7 +711,7 @@ window.showMatchDetail = async function(id) {
       if (liveStreams.length) {
         html += '<h3 style="margin-top:var(--s-lg)">Streams</h3><div style="display:flex;gap:var(--s-sm);flex-wrap:wrap">';
         liveStreams.forEach(s => {
-          html += `<a href="${s.url}" target="_blank" rel="noopener" style="font-size:13px;padding:8px 16px;background:var(--surface-soft);border-radius:var(--r-full);border:1px solid var(--hairline-soft);color:var(--body)">${esc(s.name)}</a>`;
+          html += `<a href="${s.url}" target="_blank" rel="noopener" style="font-size:12px;padding:6px 14px;background:var(--surface-soft);border-radius:var(--r-full);color:var(--body)">${esc(s.name)}</a>`;
         });
         html += '</div>';
       }
@@ -577,8 +726,36 @@ window.showMatchDetail = async function(id) {
 // --- Page: Rankings ---
 let rankingRegion = 'cn', _rankData = [], _rankSort = 'rank';
 async function renderRankings(app) {
-  app.innerHTML = `
-    <h1 class="page-title">Rankings</h1>
+  const isHome = getRoute() === '/';
+  let html = '';
+  
+  if (isHome) {
+    html += `
+      <section class="hero" style="text-align: center; margin-bottom: var(--s-section);">
+        <div style="margin-bottom: var(--s-lg);">
+          <img src="https://cdn.simpleicons.org/valorant/${getTheme() === 'dark' ? 'ffffff' : '000000'}" alt="Valorant" width="72" height="72">
+        </div>
+        <h1 class="display-xl" style="margin-bottom: var(--s-xl);">The easiest way to track<br>Valorant Esports</h1>
+        <div class="install-snippet-pill" style="margin-bottom: var(--s-xl);">
+          <code>npm install -g haclutch</code>
+          <button class="copy-btn" onclick="navigator.clipboard.writeText('npm install -g haclutch')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+          </button>
+        </div>
+        <div>
+          <button class="button-primary" onclick="navigate('/matches')">View Live Matches</button>
+        </div>
+      </section>
+
+      <div style="margin-top: var(--s-section); padding-top: var(--s-xl);">
+        <h2 class="display-lg" style="margin-bottom: var(--s-lg); text-align: center;">World Rankings</h2>
+      </div>
+    `;
+  } else {
+    html += '<h1 class="page-title">Rankings</h1>';
+  }
+
+  app.innerHTML = html + `
     <div class="filters">
       <select class="filter-select" id="rankRegion" onchange="rankingRegion=this.value;loadRankings()">
         ${regionOptions(rankingRegion)}
@@ -616,7 +793,7 @@ function _renderRankTable() {
   if (_rankSort === 'earnings') {
     items = [..._rankData].sort((a, b) => _parseEarnings(b.earnings) - _parseEarnings(a.earnings));
   }
-  el.innerHTML = `<div class="table-wrap"><table>
+  el.innerHTML = `<div class="table-wrap"><table class="rankings-table">
     <thead><tr><th>#</th><th>Team</th><th>Country</th><th>Record</th><th>+/-</th><th>Earnings</th><th>Last Played</th></tr></thead>
     <tbody>${items.map((r, i) => {
       const rec = r.record || '';
@@ -784,7 +961,7 @@ function _renderStatsPage(el) {
   const totalPages = Math.ceil(sorted.length / STATS_PER_PAGE);
   const start = (statsPage - 1) * STATS_PER_PAGE;
   const items = sorted.slice(start, start + STATS_PER_PAGE);
-  el.innerHTML = `<div class="table-wrap"><table>
+  el.innerHTML = `<div class="table-wrap"><table class="stats-table">
     <thead><tr><th>#</th><th>Player</th><th>Org</th><th>Agents</th>${_statsSortCols.map(c => _statsTh(c)).join('')}</tr></thead>
     <tbody>${items.map((p, i) => {
       const key = p.player.toLowerCase();
@@ -1011,12 +1188,12 @@ async function renderEventDetail(app, id) {
     if (teams.length) {
       html += '<h2 class="section-title">Participating Teams</h2><div class="cards">';
       teams.forEach(t => {
-        html += `<div class="card" onclick="navigate('/team/${t.id}')" style="padding:var(--s-lg)">
+        html += `<div class="card" onclick="navigate('/team/${t.id}')" style="padding:var(--s-base)">
           <div style="display:flex;align-items:center;gap:var(--s-md);margin-bottom:var(--s-md)">
-            <img src="${fixImg(t.logo)}" style="width:44px;height:44px;border-radius:var(--r-sm);object-fit:contain;background:var(--surface-soft)" alt="" onerror="this.style.display='none'">
-            <div><div style="font-weight:600;font-size:16px">${esc(t.name)}</div><div style="font-size:13px;color:var(--muted)">${esc(t.qualification || '')}</div></div>
+            <img src="${fixImg(t.logo)}" style="width:40px;height:40px;border-radius:var(--r-md);object-fit:contain;background:var(--surface-soft)" alt="" onerror="this.style.display='none'">
+            <div><div style="font-weight:500;font-size:16px">${esc(t.name)}</div><div style="font-size:12px;color:var(--muted)">${esc(t.qualification || '')}</div></div>
           </div>
-          ${t.players && t.players.length ? '<div style="display:flex;flex-wrap:wrap;gap:var(--s-xs)">' + t.players.map(p => `<span style="font-size:13px;background:var(--surface-soft);padding:4px 12px;border-radius:var(--r-full);color:var(--body)">${flagToEmoji(p.flag)} ${esc(p.name)}</span>`).join('') + '</div>' : ''}
+          ${t.players && t.players.length ? '<div style="display:flex;flex-wrap:wrap;gap:var(--s-xs)">' + t.players.map(p => `<span style="font-size:12px;background:var(--surface-soft);padding:4px 12px;border-radius:var(--r-full);color:var(--body)">${flagToEmoji(p.flag)} ${esc(p.name)}</span>`).join('') + '</div>' : ''}
         </div>`;
       });
       html += '</div>';
@@ -1384,7 +1561,7 @@ async function renderPlayerDetail(app, id) {
 
 // --- Page: Search ---
 async function renderSearch(app) {
-  const params = new URLSearchParams(location.hash.split('?')[1] || '');
+  const params = new URLSearchParams(location.search);
   const q = params.get('q') || '';
   if (!q) { app.innerHTML = '<h1 class="page-title">Search</h1><div class="empty"><p>Type something to search</p></div>'; return; }
   app.innerHTML = `<h1 class="page-title">Search: "${esc(q)}"</h1><div class="loading">Loading</div>`;
@@ -1462,6 +1639,45 @@ async function renderPlayers(app) {
   `;
   loadPlayers();
 }
+const _playerAvatarCache = {};
+let _playerAvatarObserver = null;
+function _observePlayerAvatars() {
+  if (_playerAvatarObserver) _playerAvatarObserver.disconnect();
+  const placeholders = document.querySelectorAll('.player-avatar-placeholder[data-pid]');
+  if (!placeholders.length) return;
+  _playerAvatarObserver = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      const ph = entry.target;
+      _playerAvatarObserver.unobserve(ph);
+      const pid = ph.dataset.pid;
+      if (!pid || _playerAvatarCache[pid] === null) return;
+      if (_playerAvatarCache[pid]) {
+        _replacePlayerAvatar(ph, _playerAvatarCache[pid]);
+        return;
+      }
+      _playerAvatarCache[pid] = null; // mark as fetching
+      apiFetch('/player?id=' + pid + '&q=profile').then(data => {
+        const img = data?.segments?.[0]?.avatar;
+        if (img) {
+          _playerAvatarCache[pid] = img;
+          _replacePlayerAvatar(ph, img);
+        }
+      }).catch(() => {});
+    });
+  }, { rootMargin: '200px' });
+  placeholders.forEach(ph => _playerAvatarObserver.observe(ph));
+}
+function _replacePlayerAvatar(ph, imgUrl) {
+  if (!imgUrl || !ph.parentNode) return;
+  const img = new Image();
+  img.className = 'player-avatar';
+  img.alt = '';
+  img.loading = 'lazy';
+  img.onload = () => ph.replaceWith(img);
+  img.onerror = () => { _playerAvatarCache[ph.dataset.pid] = null; };
+  img.src = fixImg(imgUrl);
+}
 window.loadPlayers = async function() {
   const el = $('#playersContent');
   if (!el) return;
@@ -1482,13 +1698,15 @@ window.loadPlayers = async function() {
     if (!items.length) return setEmpty(el, 'No players found');
     el.innerHTML = '<div class="cards">' + items.map(p => `
       <div class="card player-list-card" onclick="navigate('/player/${p.id}')">
-        <span class="player-flag">${flagToEmoji(p.country)}</span>
+        ${_playerAvatarCache[p.id] ? `<img class="player-avatar" src="${fixImg(_playerAvatarCache[p.id])}" alt="" loading="lazy" onerror="this.style.display='none'">` : `<span class="player-avatar-placeholder" data-pid="${p.id}">${esc(p.name).charAt(0).toUpperCase()}</span>`}
         <div class="player-info">
           <div class="player-name">${esc(p.name)}</div>
           <div class="player-team">${esc(p.teamTag || 'Free Agent')}</div>
         </div>
+        <span class="player-flag">${flagToEmoji(p.country)}</span>
       </div>
     `).join('') + '</div>';
+    _observePlayerAvatars();
     if (pagination.totalPages > 1) {
       el.innerHTML += renderPagination(pagination.page, pagination.totalPages, 'playersPage', 'loadPlayers');
     }
@@ -1508,14 +1726,14 @@ window.showPlayerDetail = async function(id) {
     const results = d.results || [];
     let html = `
       <div style="display:flex;align-items:center;gap:var(--s-lg);margin-bottom:var(--s-xl)">
-        <img src="${fixImg(info.img)}" style="width:72px;height:72px;border-radius:var(--r-full);object-fit:cover;background:var(--surface-soft)" alt="" onerror="this.style.display='none'">
+        <img src="${fixImg(info.img)}" style="width:64px;height:64px;border-radius:var(--r-full);object-fit:cover;background:var(--surface-soft)" alt="" onerror="this.style.display='none'">
         <div>
           <div style="display:flex;align-items:center;gap:var(--s-sm)">
             <span style="font-size:24px">${flagToEmoji(info.flag)}</span>
             <h3 style="margin:0">${esc(info.user)}</h3>
           </div>
           ${info.name ? `<div style="font-size:14px;color:var(--muted);margin-top:2px">${esc(info.name)}</div>` : ''}
-          ${team.name ? `<div style="margin-top:var(--s-sm)"><a href="/team/${team.id}" onclick="closeModal()" style="font-size:14px;font-weight:500;color:var(--primary)">${esc(team.name)}</a><span style="font-size:13px;color:var(--muted);margin-left:var(--s-sm)">${esc(team.joined || '')}</span></div>` : ''}
+          ${team.name ? `<div style="margin-top:var(--s-sm)"><a href="/team/${team.id}" onclick="closeModal()" style="font-size:14px;font-weight:500;color:var(--ink);text-decoration:underline">${esc(team.name)}</a><span style="font-size:12px;color:var(--muted);margin-left:var(--s-sm)">${esc(team.joined || '')}</span></div>` : ''}
         </div>
       </div>
     `;
@@ -1529,15 +1747,15 @@ window.showPlayerDetail = async function(id) {
         const t2 = teams[1] || {};
         const isWin = t1.points > t2.points;
         html += `
-          <div style="display:flex;align-items:center;gap:var(--s-md);padding:var(--s-sm) var(--s-md);background:var(--surface-soft);border-radius:var(--r-sm);font-size:13px">
-            <img src="${fixImg(ev.logo)}" style="width:20px;height:20px;border-radius:4px;object-fit:contain" alt="" onerror="this.style.display='none'">
+          <div style="display:flex;align-items:center;gap:var(--s-md);padding:var(--s-sm) var(--s-md);background:var(--surface-soft);border-radius:var(--r-full);font-size:12px">
+            <img src="${fixImg(ev.logo)}" style="width:18px;height:18px;border-radius:var(--r-sm);object-fit:contain" alt="" onerror="this.style.display='none'">
             <span style="color:var(--muted);min-width:80px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(ev.name || '')}</span>
-            <img src="${fixImg(t1.logo)}" style="width:20px;height:20px;border-radius:4px;object-fit:contain" alt="" onerror="this.style.display='none'">
-            <span style="font-weight:600">${esc(t1.tag || '')} ${esc(t1.points || '0')}</span>
+            <img src="${fixImg(t1.logo)}" style="width:18px;height:18px;border-radius:var(--r-sm);object-fit:contain" alt="" onerror="this.style.display='none'">
+            <span style="font-weight:500">${esc(t1.tag || '')} ${esc(t1.points || '0')}</span>
             <span style="color:var(--muted)">-</span>
-            <span style="font-weight:600">${esc(t2.points || '0')} ${esc(t2.tag || '')}</span>
-            <img src="${fixImg(t2.logo)}" style="width:20px;height:20px;border-radius:4px;object-fit:contain" alt="" onerror="this.style.display='none'">
-            <a href="https://www.vlr.gg/${r.match?.id || ''}" target="_blank" rel="noopener" style="margin-left:auto;color:var(--muted-soft);font-size:12px">vlr.gg</a>
+            <span style="font-weight:500">${esc(t2.points || '0')} ${esc(t2.tag || '')}</span>
+            <img src="${fixImg(t2.logo)}" style="width:18px;height:18px;border-radius:var(--r-sm);object-fit:contain" alt="" onerror="this.style.display='none'">
+            <a href="https://www.vlr.gg/${r.match?.id || ''}" target="_blank" rel="noopener" style="margin-left:auto;color:var(--muted);font-size:12px;text-decoration:underline">vlr.gg</a>
           </div>`;
       });
       html += '</div>';
@@ -1656,7 +1874,7 @@ window.showTeamDetailVlr = async function(id) {
       html += '</div>';
     }
     // Link to full team page on vlr.gg
-    html += `<div style="margin-top:var(--s-lg)"><a href="https://www.vlr.gg/team/${id}" target="_blank" rel="noopener" style="font-size:13px;padding:8px 16px;background:var(--surface-soft);border-radius:var(--r-full);color:var(--body);border:1px solid var(--hairline-soft)">View on vlr.gg</a></div>`;
+    html += `<div style="margin-top:var(--s-lg)"><a href="https://www.vlr.gg/team/${id}" target="_blank" rel="noopener" class="button-secondary" style="font-size:14px;text-decoration:none">View on vlr.gg</a></div>`;
     $('#modalBody').innerHTML = html;
   } catch (e) {
     $('#modalBody').innerHTML = '<div class="error-msg"><p>Failed to load team details</p></div>';
@@ -1689,6 +1907,28 @@ function regionOptions(selected) {
   ];
   return regions.map(([v,l]) => `<option value="${v}" ${v===selected?'selected':''}>${l}</option>`).join('');
 }
+function _relativeTime(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  if (isNaN(d)) return dateStr;
+  const diff = Date.now() - d.getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return mins + 'm ago';
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return hrs + 'h ago';
+  const days = Math.floor(hrs / 24);
+  if (days < 7) return days + 'd ago';
+  return dateStr;
+}
+
+function _readTime(text) {
+  if (!text) return '';
+  const words = text.split(/\s+/).length;
+  const mins = Math.max(1, Math.round(words / 200));
+  return mins + ' min read';
+}
+
 function esc(s) {
   if (s == null) return '';
   const d = document.createElement('div');

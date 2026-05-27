@@ -2,11 +2,9 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Haclutch — Valorant Esports</title>
 <link rel="icon" type="image/svg+xml" href="https://cdn.simpleicons.org/valorant/000000" id="favicon">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/assets/style.css">
 </head>
 <body>
@@ -14,9 +12,12 @@
 <header class="header">
   <div class="header-inner">
     <div class="logo" onclick="navigate('/')">
-      <div class="logo-icon"><img src="https://cdn.simpleicons.org/valorant/000000" alt="" width="28" height="28" id="logoIcon"></div>
-      <span>Haclutch</span>
+      <div class="logo-icon"><img src="https://cdn.simpleicons.org/valorant/000000" alt="" width="32" height="32" id="logoIcon"></div>
+      <span class="display-lg" style="font-size: 20px;">Haclutch</span>
     </div>
+    <button class="hamburger" id="hamburger" aria-label="Menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
     <nav class="nav" id="nav">
       <a href="/" data-route="/rankings">Rankings</a>
       <a href="/matches" data-route="/matches">Matches</a>
@@ -27,11 +28,11 @@
       <a href="/news" data-route="/news">News</a>
     </nav>
     <div class="search-box" id="searchBox">
-      <div class="search-bar" id="searchBar" onclick="if(!searchOpen)toggleSearch()">
+      <div class="search-pill" id="searchBar">
         <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-        <input type="text" id="searchInput" placeholder="Search..." />
-        <button class="search-go" onclick="doSearch()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        <input type="text" id="searchInput" placeholder="Search teams, players, events..." />
+        <button class="button-primary search-go" onclick="doSearch()" aria-label="Search">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
         </button>
       </div>
     </div>
@@ -42,8 +43,21 @@
 
 <div class="modal-overlay" id="modal">
   <div class="modal" id="modalContent">
+    <div class="modal-drag-handle" id="modalDragHandle"></div>
     <button class="modal-close" onclick="closeModal()">&times;</button>
     <div id="modalBody"></div>
+  </div>
+</div>
+
+<div class="search-overlay" id="searchOverlay">
+  <div class="search-overlay-bar">
+    <button class="search-overlay-close" id="searchOverlayClose" aria-label="Close search">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+    </button>
+    <input type="text" class="search-overlay-input" id="searchOverlayInput" placeholder="Search teams, players, events..." />
+    <button class="button-primary search-overlay-go" id="searchOverlayGo">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+    </button>
   </div>
 </div>
 
