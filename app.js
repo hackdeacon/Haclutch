@@ -551,8 +551,7 @@ function _renderRankTable() {
 
 // --- Page: Stats ---
 let statsRegion = 'cn', statsTimespan = '30', statsPage = 1, _statsData = [], _statsSort = [];
-let _statsFilterOrg = '', _statsFilterAgent = '', _statsFilterCountry = '';
-const _statsCountryMap = {};
+let _statsFilterOrg = '', _statsFilterAgent = '';
 const _statsSortCols = [
   { key: 'rating', label: 'Rating', field: 'rating' },
   { key: 'acs', label: 'ACS', field: 'average_combat_score' },
@@ -608,7 +607,6 @@ function _sortStatsData(data) {
 async function renderStats(app) {
   _statsFilterOrg = '';
   _statsFilterAgent = '';
-  _statsFilterCountry = '';
   app.innerHTML = `
     <h1 class="page-title">Player Stats</h1>
     <div class="filters">
@@ -626,9 +624,6 @@ async function renderStats(app) {
       </select>
       <select class="filter-select" id="statsFilterAgent" onchange="_statsFilterAgent=this.value;statsPage=1;_renderStatsPage($('#statsContent'))">
         <option value="">All Agents</option>
-      </select>
-      <select class="filter-select" id="statsFilterCountry" onchange="_statsFilterCountry=this.value;statsPage=1;_renderStatsPage($('#statsContent'))">
-        <option value="">All Countries</option>
       </select>
       <span id="statsSortChips" class="sort-chips"></span>
     </div>
@@ -649,48 +644,24 @@ window.loadStats = async function() {
     statsPage = 1;
     _populateStatsFilters();
     _renderStatsPage(el);
-    _fetchStatsCountries();
   } catch (e) {
     setError(el, 'Failed to load stats', loadStats);
   }
 };
 
-async function _fetchStatsCountries() {
-  try {
-    let page = 1;
-    while (true) {
-      const data = await vlrFetch('/api/v1/players?page=' + page + '&limit=100');
-      const players = data.data || [];
-      if (!players.length) break;
-      for (const p of players) {
-        if (p.name && p.country) _statsCountryMap[p.name.toLowerCase()] = p.country;
-      }
-      if (players.length < 100) break;
-      page++;
-    }
-    if ($('#statsContent')) {
-      _populateStatsFilters();
-      _renderStatsPage($('#statsContent'));
-    }
-  } catch {}
-}
 
 function _populateStatsFilters() {
   const orgs = [...new Set(_statsData.map(p => p.org).filter(Boolean))].sort();
   const agents = [...new Set(_statsData.flatMap(p => p.agents || []).filter(Boolean))].sort();
-  const countries = [...new Set(_statsData.map(p => _statsCountryMap[p.player?.toLowerCase()]).filter(Boolean))].sort();
   const orgSel = document.getElementById('statsFilterOrg');
   const agentSel = document.getElementById('statsFilterAgent');
-  const countrySel = document.getElementById('statsFilterCountry');
   if (orgSel) orgSel.innerHTML = '<option value="">All Orgs</option>' + orgs.map(o => `<option value="${esc(o)}" ${o===_statsFilterOrg?'selected':''}>${esc(o)}</option>`).join('');
   if (agentSel) agentSel.innerHTML = '<option value="">All Agents</option>' + agents.map(a => `<option value="${esc(a)}" ${a===_statsFilterAgent?'selected':''}>${esc(a)}</option>`).join('');
-  if (countrySel) countrySel.innerHTML = '<option value="">All Countries</option>' + countries.map(c => `<option value="${esc(c)}" ${c===_statsFilterCountry?'selected':''}>${flagToEmoji(c)} ${esc(c)}</option>`).join('');
 }
 function _filterStatsData(data) {
   let result = data;
   if (_statsFilterOrg) result = result.filter(p => p.org === _statsFilterOrg);
   if (_statsFilterAgent) result = result.filter(p => (p.agents || []).includes(_statsFilterAgent));
-  if (_statsFilterCountry) result = result.filter(p => _statsCountryMap[p.player?.toLowerCase()] === _statsFilterCountry);
   return result;
 }
 const _statsAvatarCache = {};
@@ -705,7 +676,6 @@ async function _fetchStatsPlayer(name) {
     if (match) {
       _statsPlayerIdCache[key] = match;
       _statsAvatarCache[key] = match.img || '';
-      if (match.country) _statsCountryMap[key] = match.country;
     }
     return match;
   } catch { return null; }
@@ -732,11 +702,9 @@ function _renderStatsPage(el) {
       const cached = _statsPlayerIdCache[key];
       const href = cached ? `#/player/${cached.id}` : '';
       const avSrc = _statsAvatarCache[key];
-      const country = _statsCountryMap[key] || '';
       return `<tr>
         <td class="rank-cell">${start + i + 1}</td>
         <td style="font-weight:600">
-          ${country ? `<span style="margin-right:4px">${flagToEmoji(country)}</span>` : ''}
           <span class="stats-player-cell" data-name="${esc(p.player)}">
             <span class="stats-av-placeholder" ${avSrc ? `data-src="${fixImg(avSrc)}"` : ''}></span>
             ${href ? `<a href="${href}">${esc(p.player)}</a>` : `<span class="stats-player-name">${esc(p.player)}</span>`}
