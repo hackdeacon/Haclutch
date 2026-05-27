@@ -27,12 +27,12 @@
       <a href="/news" data-route="/news">News</a>
     </nav>
     <div class="search-box" id="searchBox">
-      <div class="search-orb" id="searchOrb" onclick="toggleSearch()">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-      </div>
       <div class="search-bar" id="searchBar">
+        <button class="search-icon" id="searchIcon" onclick="toggleSearch()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        </button>
         <input type="text" id="searchInput" placeholder="Search teams, players..." />
-        <button class="search-orb" onclick="doSearch()">
+        <button class="search-go" id="searchGo" onclick="doSearch()">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         </button>
       </div>

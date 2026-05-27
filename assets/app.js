@@ -244,14 +244,11 @@ let searchOpen = false;
 function toggleSearch() {
   searchOpen = !searchOpen;
   const bar = $('#searchBar');
-  const orb = $('#searchOrb');
   if (searchOpen) {
     bar.classList.add('open');
-    orb.style.display = 'none';
-    setTimeout(() => $('#searchInput').focus(), 100);
+    setTimeout(() => $('#searchInput').focus(), 200);
   } else {
     bar.classList.remove('open');
-    orb.style.display = '';
     $('#searchInput').value = '';
   }
 }
