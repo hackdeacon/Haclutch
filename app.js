@@ -6,6 +6,11 @@ const VLR_API = location.protocol === 'file:' || location.hostname === 'localhos
   ? '' : VLR_API_RAW;
 const $ = (s, p = document) => p.querySelector(s);
 const $$ = (s, p = document) => [...p.querySelectorAll(s)];
+function getTheme() { return matchMedia('(prefers-color-scheme:dark)').matches ? 'dark' : 'light'; }
+function vlrThemePath(path) {
+  const sep = path.includes('?') ? '&' : '?';
+  return path + sep + 'theme=' + getTheme();
+}
 
 // --- Utils ---
 function fixImg(url) {
@@ -330,6 +335,12 @@ const CacheManager = {
 
 // Cleanup old cache on load
 CacheManager.cleanup();
+
+// Clear VLR cache on theme change
+matchMedia('(prefers-color-scheme:dark)').addEventListener('change', () => {
+  const keys = Object.keys(localStorage).filter(k => k.startsWith('cache:vlr:'));
+  keys.forEach(k => localStorage.removeItem(k));
+});
 
 // --- Page: News ---
 async function renderNews(app) {
@@ -707,7 +718,7 @@ async function getCombinedEvents(tab) {
   const vlrStatus = { live: 'ongoing', upcoming: 'upcoming', completed: 'completed' }[tab];
   const [vData, vlrData] = await Promise.all([
     safeFetch(apiFetch('/events?q=' + vQ), null),
-    safeFetch(vlrFetch('/api/v1/events?status=' + vlrStatus), null),
+    safeFetch(vlrFetch(vlrThemePath('/api/v1/events?status=' + vlrStatus)), null),
   ]);
   const vItems = asSegments(vData).map(normalizeEventFromV);
   const vlrItems = (Array.isArray(vlrData) ? vlrData : []).map(normalizeEventFromVlr);
@@ -831,7 +842,7 @@ async function renderTeamDetail(app, id) {
   try {
     const [data, vlrDetail] = await Promise.all([
       apiFetch('/team?id=' + id),
-      safeFetch(vlrFetch('/api/v1/teams/' + id), null),
+      safeFetch(vlrFetch(vlrThemePath('/api/v1/teams/' + id)), null),
     ]);
     const team = firstSegment(data);
     if (!team || !team.name) return setEmpty(app, 'Team not found');
@@ -1025,7 +1036,7 @@ async function renderPlayerDetail(app, id) {
     const [profileData, matchesData, vlrDetail] = await Promise.all([
       safeFetch(apiFetch('/player?id=' + id), null),
       safeFetch(apiFetch('/player?id=' + id + '&q=matches'), null),
-      safeFetch(vlrFetch('/api/v1/players/' + id), null),
+      safeFetch(vlrFetch(vlrThemePath('/api/v1/players/' + id)), null),
     ]);
     const profile = firstSegment(profileData);
     const info = vlrDetail?.info || {};
@@ -1220,8 +1231,7 @@ window.loadPlayers = async function() {
   if (!el) return;
   setLoading(el);
   try {
-    let vlrPath = '/api/v1/players?page=' + playersPage + '&limit=50';
-    if (playersRegion !== 'all') vlrPath += '&region=' + playersRegion;
+    let vlrPath = vlrThemePath('/api/v1/players?page=' + playersPage + '&limit=50' + (playersRegion !== 'all' ? '&region=' + playersRegion : ''));
     const cacheKey = 'vlr:' + vlrPath;
     let json;
     const cached = CacheManager.get(cacheKey);
@@ -1253,7 +1263,7 @@ window.loadPlayers = async function() {
 window.showPlayerDetail = async function(id) {
   openModal('<div class="loading">Loading player details</div>');
   try {
-    const res = await fetch(VLR_API + '/api/v1/players/' + id);
+    const res = await fetch(VLR_API + vlrThemePath('/api/v1/players/' + id));
     const json = await res.json();
     const d = json.data;
     if (!d || !d.info) { $('#modalBody').innerHTML = '<p>Player not found</p>'; return; }
@@ -1333,8 +1343,7 @@ window.loadTeamsList = async function() {
   if (!el) return;
   setLoading(el);
   try {
-    let vlrPath = '/api/v1/teams?page=' + teamsPage + '&limit=50';
-    if (teamsRegion !== 'all') vlrPath += '&region=' + teamsRegion;
+    let vlrPath = vlrThemePath('/api/v1/teams?page=' + teamsPage + '&limit=50' + (teamsRegion !== 'all' ? '&region=' + teamsRegion : ''));
     const cacheKey = 'vlr:' + vlrPath;
     let json;
     const cached = CacheManager.get(cacheKey);
@@ -1366,7 +1375,7 @@ window.loadTeamsList = async function() {
 window.showTeamDetailVlr = async function(id) {
   openModal('<div class="loading">Loading team details</div>');
   try {
-    const res = await fetch(VLR_API + '/api/v1/teams/' + id);
+    const res = await fetch(VLR_API + vlrThemePath('/api/v1/teams/' + id));
     const json = await res.json();
     const d = json.data;
     if (!d || !d.info) { $('#modalBody').innerHTML = '<p>Team not found</p>'; return; }
