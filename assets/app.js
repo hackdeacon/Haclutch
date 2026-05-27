@@ -606,7 +606,7 @@ function _renderRankTable() {
         <td><div class="team-cell"><img src="${fixImg(r.logo)}" alt="" onerror="this.style.display='none'"><span style="font-weight:600">${esc(r.team)}</span></div></td>
         <td>${flagToEmoji(r.country)} ${esc(r.country || '')}</td>
         <td>${esc(r.record || '')}</td>
-        <td>${esc(r.earnings || '')}</td>
+        <td title="${r.earnings ? '≈ ¥' + (Number(String(r.earnings).replace(/[^0-9.]/g,'')) * 6.8).toLocaleString('zh-CN',{maximumFractionDigits:0}) : ''}" style="cursor:help">${esc(r.earnings || '')}</td>
         <td style="font-size:13px;color:var(--muted)">${esc(r.last_played || '')} ${r.last_played_team ? `<span style="display:inline-flex;align-items:center;gap:4px">· ${esc(r.last_played_team)} ${r.last_played_team_logo ? `<img src="${fixImg(r.last_played_team_logo)}" alt="" style="width:16px;height:16px;border-radius:2px;object-fit:contain" onerror="this.style.display='none'">` : ''}</span>` : ''}</td>
       </tr>
     `).join('')}</tbody>
