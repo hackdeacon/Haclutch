@@ -1,7 +1,18 @@
 {
-  "routes": [
-    { "src": "^/v2(/.*)?$", "dest": "https://v.kiringo.cn/v2$1", "continue": true },
-    { "src": "^/api/v1(/.*)?$", "dest": "https://vlr.kiringo.cn/api/v1$1", "continue": true },
-    { "src": "^/((?!assets|favicon\\.ico).*)$", "dest": "/index.html" }
+  "rewrites": [
+    { "source": "/v2/:match*", "destination": "https://v.kiringo.cn/v2/:match*" },
+    { "source": "/api/v1/:match*", "destination": "https://vlr.kiringo.cn/api/v1/:match*" },
+    { "source": "/", "destination": "/index.html" },
+    { "source": "/matches", "destination": "/index.html" },
+    { "source": "/rankings", "destination": "/index.html" },
+    { "source": "/stats", "destination": "/index.html" },
+    { "source": "/players", "destination": "/index.html" },
+    { "source": "/teams", "destination": "/index.html" },
+    { "source": "/events", "destination": "/index.html" },
+    { "source": "/news", "destination": "/index.html" },
+    { "source": "/search", "destination": "/index.html" },
+    { "source": "/player/:id", "destination": "/index.html" },
+    { "source": "/team/:id", "destination": "/index.html" },
+    { "source": "/event/:id", "destination": "/index.html" }
   ]
 }
