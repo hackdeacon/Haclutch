@@ -188,8 +188,8 @@ function byId(items) {
 // --- Router ---
 let currentRoute = '';
 let liveInterval = null;
-function navigate(path) { location.hash = '#' + path; }
-function getRoute() { return location.hash.slice(1) || '/'; }
+function navigate(path) { history.pushState(null, '', path); router(); }
+function getRoute() { return location.pathname || '/'; }
 function clearLiveInterval() { if (liveInterval) { clearInterval(liveInterval); liveInterval = null; } }
 
 async function router() {
@@ -216,7 +216,16 @@ async function router() {
   if (route.startsWith('/search')) return renderSearch(app);
   app.innerHTML = '<div class="empty"><p>Page not found</p></div>';
 }
-window.addEventListener('hashchange', router);
+window.addEventListener('popstate', router);
+document.addEventListener('click', e => {
+  const a = e.target.closest('a');
+  if (!a) return;
+  const href = a.getAttribute('href');
+  if (href && href.startsWith('/') && !href.startsWith('//')) {
+    e.preventDefault();
+    navigate(href);
+  }
+});
 
 // --- Search ---
 let searchTimer = null;
@@ -743,7 +752,7 @@ function _renderStatsPage(el) {
     <tbody>${items.map((p, i) => {
       const key = p.player.toLowerCase();
       const cached = _statsPlayerIdCache[key];
-      const href = cached ? `#/player/${cached.id}` : '';
+      const href = cached ? `/player/${cached.id}` : '';
       const avSrc = _statsAvatarCache[key];
       return `<tr>
         <td class="rank-cell">${start + i + 1}</td>
@@ -779,7 +788,7 @@ function _replaceAvatar(ph, imgUrl, playerId, playerName) {
     const cell = ph.closest('.stats-player-cell');
     if (cell) {
       const nameSpan = cell.querySelector('.stats-player-name');
-      if (nameSpan) nameSpan.outerHTML = `<a href="#/player/${playerId}">${esc(playerName)}</a>`;
+      if (nameSpan) nameSpan.outerHTML = `<a href="/player/${playerId}">${esc(playerName)}</a>`;
     }
   }
 }
@@ -1261,7 +1270,7 @@ async function renderPlayerDetail(app, id) {
       html += '<div class="detail-meta" style="margin-bottom:var(--s-lg)">';
       if (team.name) {
         const teamLabel = `${esc(team.name)}${team.joined ? ' · ' + esc(team.joined) : ''}`;
-        html += team.id ? `<a class="link-chip" href="#/team/${team.id}">${teamLabel}</a>` : `<span class="link-chip">${teamLabel}</span>`;
+        html += team.id ? `<a class="link-chip" href="/team/${team.id}">${teamLabel}</a>` : `<span class="link-chip">${teamLabel}</span>`;
       }
       socialLinks.forEach(s => {
         html += `<a class="link-chip" href="${s.url}" target="_blank" rel="noopener">${esc(s.platform)}</a>`;
@@ -1469,7 +1478,7 @@ window.showPlayerDetail = async function(id) {
             <h3 style="margin:0">${esc(info.user)}</h3>
           </div>
           ${info.name ? `<div style="font-size:14px;color:var(--muted);margin-top:2px">${esc(info.name)}</div>` : ''}
-          ${team.name ? `<div style="margin-top:var(--s-sm)"><a href="#/team/${team.id}" onclick="closeModal()" style="font-size:14px;font-weight:500;color:var(--primary)">${esc(team.name)}</a><span style="font-size:13px;color:var(--muted);margin-left:var(--s-sm)">${esc(team.joined || '')}</span></div>` : ''}
+          ${team.name ? `<div style="margin-top:var(--s-sm)"><a href="/team/${team.id}" onclick="closeModal()" style="font-size:14px;font-weight:500;color:var(--primary)">${esc(team.name)}</a><span style="font-size:13px;color:var(--muted);margin-left:var(--s-sm)">${esc(team.joined || '')}</span></div>` : ''}
         </div>
       </div>
     `;

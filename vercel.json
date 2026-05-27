@@ -1,6 +1,7 @@
 {
   "rewrites": [
     { "source": "/v2/:match*", "destination": "https://v.kiringo.cn/v2/:match*" },
-    { "source": "/api/v1/:match*", "destination": "https://vlr.kiringo.cn/api/v1/:match*" }
+    { "source": "/api/v1/:match*", "destination": "https://vlr.kiringo.cn/api/v1/:match*" },
+    { "source": "/:path*", "destination": "/index.html" }
   ]
 }

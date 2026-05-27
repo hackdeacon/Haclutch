@@ -26,7 +26,14 @@ class CORSProxyHandler(http.server.SimpleHTTPRequestHandler):
         elif self.path.startswith('/api/v1/'):
             self._proxy(VLR_API_BASE)
         else:
-            super().do_GET()
+            # SPA fallback: serve index.html for non-file routes
+            path = self.path.split('?')[0]
+            file_path = os.path.join(os.getcwd(), path.lstrip('/'))
+            if os.path.isfile(file_path):
+                super().do_GET()
+            else:
+                self.path = '/index.html'
+                super().do_GET()
 
     def _proxy(self, base):
         url = base + self.path
